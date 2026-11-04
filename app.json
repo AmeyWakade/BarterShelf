@@ -1,0 +1,8 @@
+{
+  "expo": {
+    "name": "BarterShelf", "slug": "bartershelf", "scheme": "bartershelf", "version": "1.0.0",
+    "orientation": "portrait", "userInterfaceStyle": "light", "newArchEnabled": true, "platforms": ["ios", "android"],
+    "plugins": ["expo-router", ["expo-image-picker", { "photosPermission": "Choose up to four photos for your neighborhood listing.", "cameraPermission": "Take photos for your listing." }], ["expo-location", { "locationWhenInUsePermission": "BarterShelf uses your location to show items within 3 km." }]],
+    "experiments": { "typedRoutes": true }, "ios": { "supportsTablet": true }, "android": { "edgeToEdgeEnabled": true }
+  }
+}
