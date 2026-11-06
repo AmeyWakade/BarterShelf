@@ -54,6 +54,7 @@ export async function fetchNearbyListings(location: NeighborhoodLocation, radius
   return result.listings.map(normalizeListing);
 }
 export async function fetchMyListings() { const result = await request<{ listings: Record<string, unknown>[] }>('/listings/mine'); return result.listings.map(normalizeListing); }
+export async function updateListingStatus(id: string,status: Listing['status']) { const result=await request<{listing:Record<string,unknown>}>(`/listings/${id}/status`,{method:'PATCH',body:JSON.stringify({status})});return normalizeListing(result.listing); }
 export async function fetchListing(id: string) { const result = await request<{ listing: Record<string, unknown> }>(`/listings/${id}`); return normalizeListing(result.listing); }
 export async function uploadImages(uris: string[]) {
   if (!uris.length) return [];
@@ -63,9 +64,10 @@ export async function uploadImages(uris: string[]) {
 }
 export async function publishListings(listings: ListingDraft[]) { const result = await request<{ listings: Record<string, unknown>[] }>('/listings', { method: 'POST', body: JSON.stringify(listings) }); return result.listings.map(normalizeListing); }
 export async function fetchSalesSummary(): Promise<SalesSummary> {
-  const result = await request<SalesSummary & { transactions: (SalesSummary['transactions'][number] & { _id?: string })[] }>('/transactions/sales');
-  return { ...result, transactions: result.transactions.map(item => ({ ...item, id: item.id ?? item._id ?? '' })) };
+  const result = await request<SalesSummary & { transactions: (SalesSummary['transactions'][number] & { _id?: string; id?: string })[] }>('/transactions/sales');
+  return { ...result, transactions: result.transactions.map(item => ({ ...item, id: item.id ?? (item as SalesSummary['transactions'][number] & {_id?:string})._id ?? '' })) };
 }
+export async function approveTransaction(id:string){return request(`/transactions/${id}/approve`,{method:'PATCH',body:'{}'});}
 export async function completeTransaction(id: string) { return request(`/transactions/${id}/complete`, { method: 'PATCH', body: '{}' }); }
 export async function startTransaction(listingId: string, type: 'sale' | 'rental', days?: number) { return request('/transactions', { method: 'POST', body: JSON.stringify({ listingId, type, days }) }); }
 export async function fetchChats(): Promise<ChatThread[]> {

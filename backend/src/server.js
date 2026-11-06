@@ -8,7 +8,7 @@ import authRoutes from './routes/auth.js';
 import listingRoutes from './routes/listings.js';
 import bundleRoutes from './routes/bundles.js';
 import transactionRoutes from './routes/transactions.js';
-import uploadRoutes from './routes/uploads.js';
+import uploadRoutes, { localUploadsDirectory } from './routes/uploads.js';
 import chatRoutes from './routes/chats.js';
 import { errorHandler, notFound } from './middleware/errors.js';
 
@@ -22,6 +22,7 @@ app.disable('x-powered-by');
 app.use(helmet());
 app.use(cors({ origin: origins.includes('*') ? true : origins, credentials: true, maxAge: 86400 }));
 app.use(express.json({ limit: '1mb' }));
+if (process.env.NODE_ENV === 'development') app.use('/uploads', express.static(localUploadsDirectory, { immutable: true, index: false, maxAge: '1d' }));
 app.use('/api', rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: 'draft-8', legacyHeaders: false }));
 app.get('/health', (_req, res) => res.json({ status: 'ok', database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected' }));
 app.use('/api/auth', authRoutes);

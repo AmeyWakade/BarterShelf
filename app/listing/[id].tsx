@@ -42,7 +42,7 @@ export default function ListingDetail() {
     {listing.images?.[0] ? <Image source={{ uri: listing.images[0] }} resizeMode="cover" style={{ height: 280, width: '100%', backgroundColor: '#e1ead8' }} /> : <View style={{ height: 230, alignItems: 'center', justifyContent: 'center', backgroundColor: '#e1ead8' }}><Text style={{ fontSize: 80 }}>📦</Text></View>}
     <View style={{ padding: 22 }}>
       <Text style={{ fontSize: 27, fontWeight: '900', color: colors.ink }}>{listing.title}</Text>
-      <Text style={{ fontSize: 13, color: colors.muted, marginTop: 7 }}>{listing.category} · {listing.conditionType === 'first_hand' ? '1st-hand' : '2nd-hand'} · {listing.location.localityName} · {listing.ownerName}</Text>
+      <Text style={{ fontSize: 13, color: colors.muted, marginTop: 7 }}>{listing.category} · {listing.conditionType === 'first_hand' ? 'New' : 'Pre-owned'} · {listing.location.localityName} · {listing.ownerName}</Text>
       <Text style={{ fontSize: 14, color: colors.ink, lineHeight: 22, marginTop: 18 }}>{listing.description || 'No description added.'}</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 18 }}>{listing.transactionTypes.map(type => <View key={type} style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 99, backgroundColor: '#eaf1df' }}><Text style={{ fontSize: 11, fontWeight: '900', color: colors.green }}>{type.toUpperCase()}</Text></View>)}</View>
       {listing.price > 0 && <Text style={{ fontSize: 23, fontWeight: '900', color: colors.green, marginTop: 20 }}>₹{listing.price.toLocaleString('en-IN')}</Text>}

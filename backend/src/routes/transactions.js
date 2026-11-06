@@ -22,14 +22,20 @@ router.get('/sales', requireAuth, async (req, res) => {
   const [transactions, earnings, counts] = await Promise.all([
     Transaction.find({ sellerId: req.user.id }).populate('listingId', 'title images status').populate('buyerId', 'username').sort({ createdAt: -1 }).limit(100).lean(),
     Transaction.aggregate([{ $match: { sellerId: req.user._id, status: 'completed', type: 'sale' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
-    Transaction.aggregate([{ $match: { sellerId: req.user._id, status: 'pending_pickup' } }, { $group: { _id: '$type', count: { $sum: 1 } } }]),
+    Transaction.aggregate([{ $match: { sellerId: req.user._id, status: { $in: ['pending_pickup','approved'] } } }, { $group: { _id: '$type', count: { $sum: 1 } } }]),
   ]);
   res.json({ earnings: earnings[0]?.total ?? 0, pendingPickup: counts.reduce((sum, row) => sum + row.count, 0), transactions });
 });
 
+router.patch('/:id/approve', requireAuth, async (req,res)=>{
+  const transaction=await Transaction.findOneAndUpdate({_id:req.params.id,sellerId:req.user.id,status:'pending_pickup'},{status:'approved'},{new:true});
+  if(!transaction)return res.status(404).json({error:'Pickup request not found.'});
+  res.json({transaction});
+});
+
 router.patch('/:id/complete', requireAuth, async (req, res) => {
-  const transaction = await Transaction.findOneAndUpdate({ _id: req.params.id, sellerId: req.user.id, status: 'pending_pickup' }, { status: 'completed' }, { new: true });
-  if (!transaction) return res.status(404).json({ error: 'Pending transaction not found.' });
+  const transaction = await Transaction.findOneAndUpdate({ _id: req.params.id, sellerId: req.user.id, status: 'approved' }, { status: 'completed' }, { new: true });
+  if (!transaction) return res.status(404).json({ error: 'Approved pickup not found.' });
   await Listing.findByIdAndUpdate(transaction.listingId, { status: transaction.type === 'sale' ? 'sold' : 'rented' });
   res.json({ transaction });
 });
