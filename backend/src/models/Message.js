@@ -6,6 +6,7 @@ const messageSchema = new mongoose.Schema({
   text: { type: String, required: true, trim: true, maxlength: 2000 },
   kind: { type: String, enum: ['text', 'offer'], default: 'text' },
   offer: { type: { type: String, enum: ['cash', 'trade'] }, amount: { type: Number, min: 0 }, itemDescription: { type: String, trim: true, maxlength: 300 } },
+  isReported: { type: Boolean, default: false },
 }, { timestamps: { createdAt: true, updatedAt: false }, versionKey: false });
 messageSchema.index({ chatId: 1, createdAt: 1 });
 export const Message = mongoose.model('Message', messageSchema);

@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Image, ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Button, colors } from '@/components/ui';
-import { createChat, fetchListing, getSession, startTransaction } from '@/services/api';
+import { blockUser, createChat, fetchListing, getSession, startTransaction } from '@/services/api';
+import { ReportModal } from '@/components/ReportModal';
 import type { Listing } from '@/types';
 
 export default function ListingDetail() {
@@ -10,6 +11,7 @@ export default function ListingDetail() {
   const [listing, setListing] = useState<Listing>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [reportVisible, setReportVisible] = useState(false);
   useEffect(() => { if (id) fetchListing(id).then(setListing).catch(e => setError(e.message)); }, [id]);
 
   function transact(type: 'sale' | 'rental') {
@@ -33,6 +35,16 @@ export default function ListingDetail() {
     catch (e) { Alert.alert('Could not open conversation', e instanceof Error ? e.message : 'Please try again.'); }
     finally { setBusy(false); }
   }
+  function blockSeller() {
+    if (!listing) return;
+    Alert.alert('Block this user?', 'Their listings will be hidden from you, and messaging between your accounts will be disabled.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Block user', style: 'destructive', onPress: async () => {
+        try { await blockUser(listing.ownerId); Alert.alert('User blocked', 'Their listings and messages are now hidden.'); router.back(); }
+        catch (e) { Alert.alert('Could not block user', e instanceof Error ? e.message : 'Please try again.'); }
+      } },
+    ]);
+  }
 
   if (error) return <View style={{ flex: 1, justifyContent: 'center', padding: 24, backgroundColor: colors.cream }}><Text style={{ color: colors.ink, fontWeight: '800' }}>{error}</Text><Text onPress={() => router.back()} style={{ color: colors.green, marginTop: 15 }}>Go back</Text></View>;
   if (!listing) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cream }}><Text style={{ color: colors.muted }}>Loading listing…</Text></View>;
@@ -43,6 +55,7 @@ export default function ListingDetail() {
     <View style={{ padding: 22 }}>
       <Text style={{ fontSize: 27, fontWeight: '900', color: colors.ink }}>{listing.title}</Text>
       <Text style={{ fontSize: 13, color: colors.muted, marginTop: 7 }}>{listing.category} · {listing.conditionType === 'first_hand' ? 'New' : 'Pre-owned'} · {listing.location.localityName} · {listing.ownerName}</Text>
+      {listing.ownerId !== getSession()?.user.id && <View style={{ flexDirection: 'row', gap: 18, marginTop: 12 }}><Text accessibilityRole="button" onPress={() => setReportVisible(true)} style={{ color: colors.green, fontWeight: '800' }}>Report listing</Text><Text accessibilityRole="button" onPress={blockSeller} style={{ color: colors.alertText, fontWeight: '800' }}>Block user</Text></View>}
       <Text style={{ fontSize: 14, color: colors.ink, lineHeight: 22, marginTop: 18 }}>{listing.description || 'No description added.'}</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 18 }}>{listing.transactionTypes.map(type => <View key={type} style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 99, backgroundColor: '#eaf1df' }}><Text style={{ fontSize: 11, fontWeight: '900', color: colors.green }}>{type.toUpperCase()}</Text></View>)}</View>
       {listing.price > 0 && <Text style={{ fontSize: 23, fontWeight: '900', color: colors.green, marginTop: 20 }}>₹{listing.price.toLocaleString('en-IN')}</Text>}
@@ -53,5 +66,6 @@ export default function ListingDetail() {
         {(listing.transactionTypes.includes('swap') || listing.transactionTypes.includes('rent') || listing.transactionTypes.some(type => ['buy','sell'].includes(type))) && <Button title={listing.transactionTypes.includes('swap')?'Message to propose a swap':'Message seller'} variant="secondary" disabled={busy} onPress={messageSeller} />}
       </View>
     </View>
+    <ReportModal visible={reportVisible} targetId={listing.id} targetType="listing" onClose={() => setReportVisible(false)} />
   </ScrollView>;
 }

@@ -2,7 +2,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import type { AppUser, BundleMatch, ChatMessage, ChatThread, Listing, ListingDraft, NeighborhoodLocation, RequestedBundleItem, SalesSummary, UserRole } from '@/types';
 
-const API_URL = (Constants.expoConfig?.extra?.apiUrl as string | undefined) ?? process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000/api';
+function getApiUrl(): string {
+  if (Constants.expoConfig?.extra?.apiUrl) return Constants.expoConfig.extra.apiUrl as string;
+  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
+  const hostUri = Constants.expoConfig?.hostUri;
+  if (hostUri) {
+    const hostIp = hostUri.split(':')[0];
+    if (hostIp) return `http://${hostIp}:4000/api`;
+  }
+  return 'http://192.168.0.106:4000/api';
+}
+const API_URL = getApiUrl();
+export function getPublicWebUrl(path: '/privacy-policy' | '/delete-account') {
+  return `${API_URL.replace(/\/api\/?$/, '')}${path}`;
+}
 const SESSION_KEY = 'bartershelf.session.v1';
 type Session = { token: string; user: AppUser };
 let session: Session | null = null;
@@ -20,6 +33,24 @@ export async function restoreSession(): Promise<Session | null> {
 export function getSession() { return session; }
 export async function persistSession() { if (session) await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(session)); }
 export async function clearSession() { session = null; await AsyncStorage.removeItem(SESSION_KEY); }
+export async function deleteAccount() {
+  await request('/users/account', { method: 'DELETE' });
+  await clearSession();
+}
+export async function blockUser(userId: string) {
+  await request('/users/block', { method: 'POST', body: JSON.stringify({ userId }) });
+}
+export async function fetchBlockedUsers() {
+  const result = await request<{ users: { id: string; username: string; role: UserRole; vendorVerified: boolean }[] }>('/users/blocked');
+  return result.users;
+}
+export async function unblockUser(userId: string) {
+  await request(`/users/block/${encodeURIComponent(userId)}`, { method: 'DELETE' });
+}
+export type ReportReason = 'spam' | 'scam' | 'inappropriate_content' | 'offensive';
+export async function submitReport(targetId: string, targetType: 'listing' | 'chat_message', reason: ReportReason) {
+  return request<{ reportId: string; status: 'pending' }>('/reports', { method: 'POST', body: JSON.stringify({ targetId, targetType, reason }) });
+}
 
 async function request<T>(path: string, options: RequestInit = {}, authenticated = true): Promise<T> {
   let response: Response;

@@ -6,7 +6,7 @@ export async function requireAuth(req, res, next) {
     const token = req.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
     if (!token) return res.status(401).json({ error: 'Authentication required.' });
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(payload.sub).select('_id username email role vendorVerified location radiusPreference');
+    const user = await User.findById(payload.sub).select('_id username email role vendorVerified location radiusPreference blockedUsers');
     if (!user) return res.status(401).json({ error: 'Account no longer exists.' });
     req.user = user;
     next();

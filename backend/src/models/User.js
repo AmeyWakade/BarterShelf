@@ -14,6 +14,7 @@ const userSchema = new mongoose.Schema({
   vendorVerified: { type: Boolean, default: false },
   location: { type: pointSchema, default: undefined },
   radiusPreference: { type: Number, min: 1, max: 10, default: 3 },
+  blockedUsers: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: [] },
 }, { timestamps: true, versionKey: false });
 
 userSchema.set('toJSON', { transform: (_doc, ret) => { delete ret.passwordHash; return ret; } });

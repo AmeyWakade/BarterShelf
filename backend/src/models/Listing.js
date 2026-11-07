@@ -21,6 +21,7 @@ const listingSchema = new mongoose.Schema({
   },
   localityName: { type: String, trim: true, maxlength: 120, default: '' },
   status: { type: String, enum: ['active', 'sold', 'rented', 'inactive'], default: 'active', index: true },
+  isReported: { type: Boolean, default: false, index: true },
 }, { timestamps: true, versionKey: false });
 
 listingSchema.index({ location: '2dsphere' });

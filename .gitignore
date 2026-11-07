@@ -19,3 +19,6 @@ web-build/
 
 # Native project generated locally for iOS
 /ios/
+
+# Local deployment credentials
+/deployment-credentials.local.env

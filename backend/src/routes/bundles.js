@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { Listing } from '../models/Listing.js';
+import { User } from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
 import { haversineKm } from './listings.js';
 
@@ -28,7 +29,9 @@ router.post('/bundle-match', requireAuth, async (req, res) => {
   const longitude = input.longitude ?? req.user.location?.longitude;
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return res.status(400).json({ error: 'Set your neighborhood location or provide latitude and longitude.' });
   const radiusKm = input.radius ?? req.user.radiusPreference ?? 3;
-  const candidates = await Listing.find({ status: 'active', location: { $near: { $geometry: { type: 'Point', coordinates: [longitude, latitude] }, $maxDistance: radiusKm * 1000 } } })
+  const usersBlockingMe = await User.distinct('_id', { blockedUsers: req.user.id });
+  const excludedOwners = [...new Set([...(req.user.blockedUsers ?? []).map(String), ...usersBlockingMe.map(String)])];
+  const candidates = await Listing.find({ status: 'active', ownerId: { $nin: excludedOwners }, location: { $near: { $geometry: { type: 'Point', coordinates: [longitude, latitude] }, $maxDistance: radiusKm * 1000 } } })
     .populate('ownerId', 'username role vendorVerified location')
     .limit(500).lean();
   const byOwner = new Map();

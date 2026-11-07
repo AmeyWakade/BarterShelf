@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { Listing } from '../models/Listing.js';
+import { User } from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
@@ -32,7 +33,9 @@ router.get('/nearby', requireAuth, async (req, res) => {
   const lng = Number(req.query.lng ?? req.user.location?.longitude);
   if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) return res.status(400).json({ error: 'Provide valid lat and lng coordinates.' });
   const radiusKm = queryNumber(req.query.radius, req.user.radiusPreference, 1, 10);
-  const filter = { status: 'active', location: { $near: { $geometry: { type: 'Point', coordinates: [lng, lat] }, $maxDistance: radiusKm * 1000 } } };
+  const usersBlockingMe = await User.distinct('_id', { blockedUsers: req.user.id });
+  const excludedOwners = [...new Set([...(req.user.blockedUsers ?? []).map(String), ...usersBlockingMe.map(String)])];
+  const filter = { status: 'active', ownerId: { $nin: excludedOwners }, location: { $near: { $geometry: { type: 'Point', coordinates: [lng, lat] }, $maxDistance: radiusKm * 1000 } } };
   if (['first_hand', 'second_hand'].includes(req.query.condition)) filter.conditionType = req.query.condition;
   if (['buy', 'sell', 'swap', 'rent'].includes(req.query.transactionType)) filter.transactionTypes = req.query.transactionType;
   if (typeof req.query.category === 'string' && req.query.category.trim()) filter.category = req.query.category.trim();
@@ -51,7 +54,9 @@ router.get('/mine', requireAuth, async (req, res) => {
 });
 
 router.get('/:id', requireAuth, async (req, res) => {
-  const listing = await Listing.findOne({ _id: req.params.id, status: 'active' }).populate('ownerId', 'username role vendorVerified').lean();
+  const usersBlockingMe = await User.distinct('_id', { blockedUsers: req.user.id });
+  const excludedOwners = [...new Set([...(req.user.blockedUsers ?? []).map(String), ...usersBlockingMe.map(String)])];
+  const listing = await Listing.findOne({ _id: req.params.id, status: 'active', ownerId: { $nin: excludedOwners } }).populate('ownerId', 'username role vendorVerified').lean();
   if (!listing) return res.status(404).json({ error: 'Listing is no longer available.' });
   res.json({ listing });
 });

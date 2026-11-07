@@ -49,6 +49,8 @@ The phone/emulator and computer must be able to reach the API host. A deployed H
 - GPS permission and neighborhood storage, adjustable 1–10 km discovery radius, text/category search, condition and transaction filters.
 - Multi-item draft batching, review, up to four camera/gallery photos per item, Cloudinary or local-development photo upload, and bulk publish.
 - Nearby seller bundle matching, listing detail, sale/rental pickup transactions, sales summary, and text/cash/trade chat offers.
+- In-app account deletion, public privacy policy and account-deletion request pages, listing/message reporting, and user blocking.
+- Full-screen Neighborhood Radar with camera overlay, compass-calibrated magnetometer azimuth, and swipe-to-sweep fallback; radar results follow the feed's active radius, search, and transaction filter.
 
 ## API overview
 
@@ -58,6 +60,10 @@ The phone/emulator and computer must be able to reach the API host. A deployed H
 - `POST /api/uploads/images` (Cloudinary or local development storage)
 - `POST /api/transactions`, `GET /api/transactions/sales`, `PATCH /api/transactions/:id/complete`
 - `GET/POST /api/chats`, `GET/POST /api/chats/:id/messages`
+- `DELETE /api/users/account` (authenticated account/data deletion); `POST /api/users/block`; `DELETE /api/users/block/:userId`
+- `POST /api/reports` (listing or chat-message report)
+- Public pages: `https://<your-api-domain>/privacy-policy` and `https://<your-api-domain>/delete-account`
+- Public deletion requests are queued in MongoDB for identity verification. Configure an operator workflow and support contact before launch; the form intentionally does not delete accounts based on email alone.
 
 ## Production deployment notes
 
